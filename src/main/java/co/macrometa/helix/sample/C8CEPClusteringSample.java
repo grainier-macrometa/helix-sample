@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import static co.macrometa.helix.sample.util.Constants.CLUSTER_NAME;
 import static co.macrometa.helix.sample.util.Constants.STATE_MODEL_NAME;
@@ -37,7 +38,7 @@ public class C8CEPClusteringSample {
 
     private static String CONTROLLER_NAME = "C8CEP_HELIX_CONTROLLER";
     private static int NUM_NODES = 3;
-    private static final String RESOURCE_NAME = "StreamApp1";
+    private static final String RESOURCE_NAME = "StreamApp1-" + UUID.randomUUID();
     private static final String RESOURCE_NAME_2 = "StreamApp2";
     private static final int NUM_PARTITIONS = 1;
     private static final int NUM_REPLICAS = 3;
@@ -128,6 +129,8 @@ public class C8CEPClusteringSample {
         // Add a resource 2
         addResource(RESOURCE_NAME);
 
+        admin.getResourceIdealState(CLUSTER_NAME, RESOURCE_NAME);
+
         // Add a resource 2
         addResource(RESOURCE_NAME_2);
 
@@ -136,14 +139,15 @@ public class C8CEPClusteringSample {
     private static void addResource(String resourceName) {
         echo(String.format("Adding a resource %s with %s partitions and %s replicas", resourceName, NUM_PARTITIONS, NUM_REPLICAS));
 
-        FullAutoModeISBuilder idealStateBuilder = new FullAutoModeISBuilder(resourceName);
-        idealStateBuilder.setStateModel(STATE_MODEL_NAME).setNumPartitions(NUM_PARTITIONS).setNumReplica(NUM_REPLICAS).setMaxPartitionsPerNode(2);
-        idealStateBuilder.setRebalanceStrategy("org.apache.helix.controller.rebalancer.strategy.CrushRebalanceStrategy");
-        idealStateBuilder.setRebalancerClass("org.apache.helix.controller.rebalancer.DelayedAutoRebalancer");
+        if (admin.getResourceIdealState(CLUSTER_NAME, resourceName) == null) {
+            FullAutoModeISBuilder idealStateBuilder = new FullAutoModeISBuilder(resourceName);
+            idealStateBuilder.setStateModel(STATE_MODEL_NAME).setNumPartitions(NUM_PARTITIONS).setNumReplica(NUM_REPLICAS).setMaxPartitionsPerNode(2);
+            idealStateBuilder.setRebalanceStrategy("org.apache.helix.controller.rebalancer.strategy.CrushRebalanceStrategy");
+            idealStateBuilder.setRebalancerClass("org.apache.helix.controller.rebalancer.DelayedAutoRebalancer");
 
-        // TODO: check this
-        idealStateBuilder.enableDelayRebalance();
-        idealStateBuilder.setRebalanceDelay(1000);
+            // TODO: check this
+            idealStateBuilder.enableDelayRebalance();
+            idealStateBuilder.setRebalanceDelay(1000);
 
 
 //        JobConfig.Builder myJobCfgBuilder = new JobConfig.Builder();
@@ -151,10 +155,12 @@ public class C8CEPClusteringSample {
 //
 //        myJobCfgBuilder.setTargetResource(resourceName);
 
+            admin.addResource(CLUSTER_NAME, resourceName, idealStateBuilder.build());
+            // this will set up the ideal state, it calculates the preference list for each partition similar to consistent hashing
+            admin.rebalance(CLUSTER_NAME, resourceName, NUM_REPLICAS);
+        }
 
-        admin.addResource(CLUSTER_NAME, resourceName, idealStateBuilder.build());
-        // this will set up the ideal state, it calculates the preference list for each partition similar to consistent hashing
-        admin.rebalance(CLUSTER_NAME, resourceName, NUM_REPLICAS);
+
     }
 
     private static StateModelDefinition defineStateModel() {
