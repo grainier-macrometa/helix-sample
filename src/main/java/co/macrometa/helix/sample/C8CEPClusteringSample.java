@@ -1,16 +1,27 @@
 package co.macrometa.helix.sample;
 
 import co.macrometa.helix.sample.process.C8CEPInstance;
+import com.google.common.collect.ImmutableSet;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.controller.HelixControllerMain;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
+import org.apache.helix.manager.zk.ZKHelixManager;
 import org.apache.helix.model.ExternalView;
+import org.apache.helix.model.HelixConfigScope;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.model.builder.FullAutoModeISBuilder;
+import org.apache.helix.model.builder.HelixConfigScopeBuilder;
 import org.apache.helix.task.JobConfig;
+import org.apache.helix.tools.ClusterSetup;
+import org.apache.helix.util.ZKClientPool;
+import org.apache.helix.zookeeper.api.client.HelixZkClient;
+import org.apache.helix.zookeeper.datamodel.serializer.ZNRecordSerializer;
+import org.apache.helix.zookeeper.impl.factory.SharedZkClientFactory;
+import org.apache.helix.zookeeper.zkclient.ZkClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -92,6 +103,15 @@ public class C8CEPClusteringSample {
         // Create cluster
         echo("Creating cluster: " + CLUSTER_NAME);
         admin.addCluster(CLUSTER_NAME, true);
+
+        // Allow participant auto join.
+        HelixConfigScope scope =
+                new HelixConfigScopeBuilder(HelixConfigScope.ConfigScopeProperty.CLUSTER).forCluster(CLUSTER_NAME)
+                        .build();
+        Map<String, String> properties = new HashMap<String, String>();
+        properties.put(ZKHelixManager.ALLOW_PARTICIPANT_AUTO_JOIN, "true");
+        admin.setConfig(scope, properties);
+
 
         // Add nodes to the cluster
         echo("Adding " + NUM_NODES + " participants to the cluster");
@@ -178,7 +198,7 @@ public class C8CEPClusteringSample {
     public static void startController() {
         // start controller
         echo("Starting Helix Controller");
-        HelixControllerMain.startHelixController(ZK_ADDRESS, CLUSTER_NAME, CONTROLLER_NAME, HelixControllerMain.STANDALONE);
+        HelixControllerMain.startHelixController(ZK_ADDRESS, CLUSTER_NAME, CONTROLLER_NAME, HelixControllerMain.DISTRIBUTED);
     }
 
     private static void addNode() throws Exception {
