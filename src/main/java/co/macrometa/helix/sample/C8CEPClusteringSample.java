@@ -1,7 +1,6 @@
 package co.macrometa.helix.sample;
 
 import co.macrometa.helix.sample.process.C8CEPInstance;
-import com.google.common.collect.ImmutableSet;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.controller.HelixControllerMain;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
@@ -12,13 +11,6 @@ import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.model.builder.FullAutoModeISBuilder;
 import org.apache.helix.model.builder.HelixConfigScopeBuilder;
-import org.apache.helix.task.JobConfig;
-import org.apache.helix.tools.ClusterSetup;
-import org.apache.helix.util.ZKClientPool;
-import org.apache.helix.zookeeper.api.client.HelixZkClient;
-import org.apache.helix.zookeeper.datamodel.serializer.ZNRecordSerializer;
-import org.apache.helix.zookeeper.impl.factory.SharedZkClientFactory;
-import org.apache.helix.zookeeper.zkclient.ZkClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,8 +27,6 @@ public class C8CEPClusteringSample {
 
     // docker run --name helix-zookeeper --restart always -d -p 2181:2181 -p 8080:8080 zookeeper
     // or remote zookeeper URL
-
-    private static String CONTROLLER_NAME = "C8CEP_HELIX_CONTROLLER";
     private static int NUM_NODES = 3;
     private static final String RESOURCE_NAME = "StreamApp1-" + UUID.randomUUID();
     private static final String RESOURCE_NAME_2 = "StreamApp2";
@@ -69,6 +59,10 @@ public class C8CEPClusteringSample {
     public static void main(String[] args) throws Exception {
         setupCluster();
         startNodes();
+        startController();
+        Thread.sleep(5000);
+        startController();
+        Thread.sleep(5000);
         startController();
         Thread.sleep(5000);
         printState("After starting 2 nodes", RESOURCE_NAME);
@@ -113,7 +107,6 @@ public class C8CEPClusteringSample {
         properties.put(ZKHelixManager.ALLOW_PARTICIPANT_AUTO_JOIN, "true");
         admin.setConfig(scope, properties);
 
-
         // Add nodes to the cluster
         echo("Adding " + NUM_NODES + " participants to the cluster");
         for (int i = 0; i < NUM_NODES; i++) {
@@ -149,7 +142,6 @@ public class C8CEPClusteringSample {
             idealStateBuilder.enableDelayRebalance();
             idealStateBuilder.setRebalanceDelay(1000);
 
-
 //        JobConfig.Builder myJobCfgBuilder = new JobConfig.Builder();
 //        JobConfig myJobCfg = myJobCfgBuilder.build();
 //
@@ -159,7 +151,6 @@ public class C8CEPClusteringSample {
             // this will set up the ideal state, it calculates the preference list for each partition similar to consistent hashing
             admin.rebalance(CLUSTER_NAME, resourceName, NUM_REPLICAS);
         }
-
 
     }
 
@@ -204,7 +195,9 @@ public class C8CEPClusteringSample {
     public static void startController() {
         // start controller
         echo("Starting Helix Controller");
-        HelixControllerMain.startHelixController(ZK_ADDRESS, CLUSTER_NAME, CONTROLLER_NAME, HelixControllerMain.DISTRIBUTED);
+        // In distributed setup, controllerName should be unique
+        String controllerName = "CEPControllerName-" + UUID.randomUUID();
+        HelixControllerMain.startHelixController(ZK_ADDRESS, CLUSTER_NAME, controllerName, HelixControllerMain.DISTRIBUTED);
     }
 
     private static void addNode() throws Exception {
