@@ -61,10 +61,6 @@ public class C8CEPClusteringSample {
         startNodes();
         startController();
         Thread.sleep(5000);
-        startController();
-        Thread.sleep(5000);
-        startController();
-        Thread.sleep(5000);
         printState("After starting 2 nodes", RESOURCE_NAME);
         printState("After starting 2 nodes", RESOURCE_NAME_2);
         addNode();
@@ -86,6 +82,10 @@ public class C8CEPClusteringSample {
         Thread.sleep(5000);
         printState("After the 2nd node stops/crashes", RESOURCE_NAME);
         printState("After the 2nd node stops/crashes", RESOURCE_NAME_2);
+
+        removeResource(RESOURCE_NAME);
+        Thread.sleep(5000);
+        printState("After removing resource ", RESOURCE_NAME_2);
 
         Thread.currentThread().join();
         System.exit(0);
@@ -132,7 +132,9 @@ public class C8CEPClusteringSample {
     private static void addResource(String resourceName) {
         echo(String.format("Adding a resource %s with %s partitions and %s replicas", resourceName, NUM_PARTITIONS, NUM_REPLICAS));
 
-        if (admin.getResourceIdealState(CLUSTER_NAME, resourceName) == null) {
+
+
+        if (!admin.getResourcesInCluster(CLUSTER_NAME).contains(resourceName)) {
             FullAutoModeISBuilder idealStateBuilder = new FullAutoModeISBuilder(resourceName);
             idealStateBuilder.setStateModel(STATE_MODEL_NAME).setNumPartitions(NUM_PARTITIONS).setNumReplica(NUM_REPLICAS).setMaxPartitionsPerNode(2);
             idealStateBuilder.setRebalanceStrategy("org.apache.helix.controller.rebalancer.strategy.CrushRebalanceStrategy");
@@ -152,6 +154,16 @@ public class C8CEPClusteringSample {
             admin.rebalance(CLUSTER_NAME, resourceName, NUM_REPLICAS);
         }
 
+    }
+
+    public static void removeResource(String resourceName) {
+        echo(String.format("Removing resource %s from the cluster %s.", resourceName, CLUSTER_NAME));
+        if (admin.getResourcesInCluster(CLUSTER_NAME).contains(resourceName)) {
+            admin.dropResource(CLUSTER_NAME, resourceName);
+            echo(String.format("Resource %s has been removed from the cluster %s.", resourceName, CLUSTER_NAME));
+        } else {
+            echo(String.format("Resource %s doesn't exist in cluster %s.", resourceName, CLUSTER_NAME));
+        }
     }
 
     private static StateModelDefinition defineStateModel() {
