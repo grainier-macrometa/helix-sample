@@ -10,9 +10,9 @@ import org.apache.helix.participant.statemachine.Transition;
 @StateModelInfo(
         initialState = C8CEPClusteringSample.OFFLINE,
         states = {
-                C8CEPClusteringSample.OFFLINE,
+                C8CEPClusteringSample.ACTIVE,
                 C8CEPClusteringSample.STANDBY,
-                C8CEPClusteringSample.ONLINE,
+                C8CEPClusteringSample.OFFLINE,
                 C8CEPClusteringSample.DROPPED
         }
 )
@@ -66,7 +66,7 @@ public class C8CEPStateModel extends StateModel {
         this.sleep();
     }
 
-    @Transition(from = C8CEPClusteringSample.STANDBY, to = C8CEPClusteringSample.ONLINE)
+    @Transition(from = C8CEPClusteringSample.STANDBY, to = C8CEPClusteringSample.ACTIVE)
     public void onBecomeOnlineFromStandby(Message message, NotificationContext context) {
         String partitionName = message.getPartitionName();
         String instanceName = message.getTgtName();
@@ -74,7 +74,7 @@ public class C8CEPStateModel extends StateModel {
         this.sleep();
     }
 
-    @Transition(from = C8CEPClusteringSample.ONLINE, to = C8CEPClusteringSample.STANDBY)
+    @Transition(from = C8CEPClusteringSample.ACTIVE, to = C8CEPClusteringSample.STANDBY)
     public void onBecomeStandbyFromOnline(Message message, NotificationContext context) {
         String partitionName = message.getPartitionName();
         String instanceName = message.getTgtName();

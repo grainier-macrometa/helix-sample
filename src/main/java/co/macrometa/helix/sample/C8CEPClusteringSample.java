@@ -34,7 +34,7 @@ public class C8CEPClusteringSample {
     private static final int NUM_REPLICAS = 3;
 
     // states
-    public static final String ONLINE = "ONLINE";
+    public static final String ACTIVE = "ACTIVE";
     public static final String STANDBY = "STANDBY";
     public static final String OFFLINE = "OFFLINE";
     public static final String DROPPED = "DROPPED";
@@ -61,23 +61,24 @@ public class C8CEPClusteringSample {
         startNodes();
         startController();
         Thread.sleep(5000);
-        printState("After starting 2 nodes", RESOURCE_NAME);
-        printState("After starting 2 nodes", RESOURCE_NAME_2);
+        printState("After starting 3 nodes", RESOURCE_NAME);
+        printState("After starting 3 nodes", RESOURCE_NAME_2);
+
         addNode();
         Thread.sleep(5000);
-        printState("After adding a third node", RESOURCE_NAME);
-        printState("After adding a third node", RESOURCE_NAME_2);
+        printState("After adding a forth node", RESOURCE_NAME);
+        printState("After adding a forth node", RESOURCE_NAME_2);
+
         stopNode(0);
-//        Thread.sleep(10);
-//        reConnectNode(0);
         Thread.sleep(5000);
         printState("After the 1st node stops/crashes", RESOURCE_NAME);
         printState("After the 1st node stops/crashes", RESOURCE_NAME_2);
-        stopNode(1);
 
+        stopNode(1);
         Thread.sleep(5000);
         printState("After the 2nd node stops/crashes", RESOURCE_NAME);
         printState("After the 2nd node stops/crashes", RESOURCE_NAME_2);
+
         stopNode(2);
         Thread.sleep(5000);
         printState("After the 2nd node stops/crashes", RESOURCE_NAME);
@@ -169,7 +170,7 @@ public class C8CEPClusteringSample {
     private static StateModelDefinition defineStateModel() {
         StateModelDefinition.Builder builder = new StateModelDefinition.Builder(STATE_MODEL_NAME);
         // Add states and their rank to indicate priority. Lower the rank higher the priority
-        builder.addState(ONLINE, 1);
+        builder.addState(ACTIVE, 1);
         builder.addState(STANDBY, 2);
         builder.addState(OFFLINE);
         builder.addState(DROPPED);
@@ -180,12 +181,12 @@ public class C8CEPClusteringSample {
         // Add transitions between the states.
         builder.addTransition(OFFLINE, STANDBY);
         builder.addTransition(STANDBY, OFFLINE);
-        builder.addTransition(STANDBY, ONLINE);
-        builder.addTransition(ONLINE, STANDBY);
+        builder.addTransition(STANDBY, ACTIVE);
+        builder.addTransition(ACTIVE, STANDBY);
         builder.addTransition(OFFLINE, DROPPED);
 
         // Set Static constraint for Online state (only 1 ONLINE state).
-        builder.upperBound(ONLINE, 1);
+        builder.upperBound(ACTIVE, 1);
         // Set dynamic constraint for Standby state, R means it should be derived based on the replication factor.
         builder.dynamicUpperBound(STANDBY, "R");
 
